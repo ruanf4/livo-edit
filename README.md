@@ -44,6 +44,12 @@ Referências: [Plugins](https://learn.chatgpt.com/docs/plugins),
 [importação pelo GitHub](https://learn.chatgpt.com/docs/enterprise/plugin-management),
 [formato de pacote](https://developers.openai.com/plugins/build/plugins).
 
+## Gabarito para o celular
+
+Veja as prévias dos estilos e frases prontas para pedir a edição no
+[gabarito Livo Edit](guias/README.md). Há uma imagem completa e quatro páginas
+para compartilhar pelo celular.
+
 ## Modelos de legenda Livo
 
 - **Impacto** — palavra de destaque maior.
