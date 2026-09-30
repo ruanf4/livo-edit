@@ -97,3 +97,9 @@ Projeto: **Ruan Duarte / Livo Edit**. Abra problemas e sugestões em
 
 O código mantém a licença [MIT](LICENSE) e a atribuição da base Edvid / Creator
 Factory. As fontes têm licenças próprias em `skills/livo-edit/assets/shortform/public/fonts/`.
+
+
+Você também pode pedir: **“Troque sempre ligia por Lígia.”** A correção
+reconhece variações de acento e maiúsculas, mantém a pontuação e a sincronia e guarda
+a grafia neste projeto para as próximas legendas. Para corrigir só um trecho,
+indique o trecho no pedido.

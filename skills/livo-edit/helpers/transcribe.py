@@ -54,6 +54,7 @@ import sys
 import tempfile
 import time
 from pathlib import Path
+from transcript_spelling import correct_payload, glossary_for, load_rules, prompt_for
 
 
 WHISPERX_MODEL = "large-v3"
@@ -80,6 +81,7 @@ def call_whisperx(
     language: str | None = None,
     model_name: str = WHISPERX_MODEL,
     verbose: bool = False,
+    prompt: str = '',
 ) -> dict:
     """Transcribe locally with WhisperX. Returns {words, text, language, _aligned}
     where words are raw {word, start, end} — _to_scribe_words shapes them.
@@ -105,7 +107,8 @@ def call_whisperx(
 
     audio = whisperx.load_audio(str(audio_path))
     model = whisperx.load_model(model_name, device, compute_type=compute_type,
-                                language=language)
+                                language=language,
+                                asr_options={'beam_size': 5, 'initial_prompt': prompt or None})
     result = model.transcribe(audio, batch_size=8, language=language)
     detected = result.get("language") or language or ""
 
@@ -160,12 +163,10 @@ def call_whisperx(
 
 
 def extract_audio(video_path: Path, dest: Path) -> None:
-    """Extract mono 16kHz 64kbps MP3. Whisper is trained on 16kHz mono, so the
-    lossy encode costs nothing in transcript quality and keeps the file small.
-    """
+    """PCM mono 16kHz: evita uma compressão com perdas antes do reconhecimento."""
     cmd = [
         "ffmpeg", "-y", "-i", str(video_path),
-        "-vn", "-ac", "1", "-ar", "16000", "-c:a", "libmp3lame", "-b:a", "64k",
+        "-vn", "-ac", "1", "-ar", "16000", "-c:a", "pcm_s16le",
         str(dest),
     ]
     subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
@@ -225,6 +226,9 @@ def transcribe_one(
     num_speakers: int | None = None,
     model: str = WHISPERX_MODEL,
     verbose: bool = True,
+    prompt: str = '',
+    glossary: Path | None = None,
+    force: bool = False,
 ) -> Path:
     """Transcribe a single video. Returns path to transcript JSON.
 
@@ -239,7 +243,12 @@ def transcribe_one(
     transcripts_dir.mkdir(parents=True, exist_ok=True)
     out_path = transcripts_dir / f"{video.stem}.json"
 
-    if out_path.exists():
+    rules = load_rules(glossary or glossary_for(edit_dir))
+    if out_path.exists() and not force:
+        cached = json.loads(out_path.read_text(encoding='utf-8'))
+        corrected, _ = correct_payload(cached, rules)
+        if corrected != cached:
+            out_path.write_text(json.dumps(corrected, ensure_ascii=False, indent=2), encoding='utf-8')
         if verbose:
             print(f"cached: {out_path.name}")
         return out_path
@@ -251,12 +260,13 @@ def transcribe_one(
 
     t0 = time.time()
     with tempfile.TemporaryDirectory() as tmp:
-        audio = Path(tmp) / f"{video.stem}.mp3"
+        audio = Path(tmp) / f"{video.stem}.wav"
         extract_audio(video, audio)
         if verbose:
             size_mb = audio.stat().st_size / (1024 * 1024)
-            print(f"  transcribing {video.stem}.mp3 ({size_mb:.1f} MB)", flush=True)
-        raw = call_whisperx(audio, language=language, model_name=model, verbose=verbose)
+            print(f"  transcribing {video.stem}.wav ({size_mb:.1f} MB)", flush=True)
+        raw = call_whisperx(audio, language=language, model_name=model, verbose=verbose,
+                            prompt=prompt_for(rules, prompt))
 
     tag = f"whisperx/{model}" + ("" if raw.get("_aligned", True) else "/UNALIGNED")
     payload = {
@@ -266,7 +276,8 @@ def transcribe_one(
         "words": _to_scribe_words(raw.get("words", [])),
         "_transcription_backend": tag,
     }
-    out_path.write_text(json.dumps(payload, indent=2))
+    payload, _ = correct_payload(payload, rules)
+    out_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding='utf-8')
     dt = time.time() - t0
 
     if verbose:
@@ -305,6 +316,9 @@ def main() -> None:
         help=f"Whisper model (default: {WHISPERX_MODEL}). "
              "large-v3-turbo is faster and slightly less accurate.",
     )
+    ap.add_argument('--prompt', default='', help='Nomes e termos esperados no áudio, sem inventar fala.')
+    ap.add_argument('--glossary', type=Path, help='transcription-glossary.json do projeto')
+    ap.add_argument('--force', action='store_true', help='Refaz a transcrição mesmo se houver cache')
     args = ap.parse_args()
 
     video = args.video.resolve()
@@ -317,6 +331,7 @@ def main() -> None:
         language=args.language,
         num_speakers=args.num_speakers,
         model=args.model,
+        prompt=args.prompt, glossary=args.glossary, force=args.force,
     )
 
 

@@ -405,3 +405,11 @@ On startup, read it if it exists and summarize the last session in one sentence 
   no one is reading it.
 - Applying `preview_edits.json` blindly — validate new edges against `speech_regions.py` first (flag clipped words to the user).
 - Asking "NORMAL ou LOG?", or assuming the profile without running `detect_color.py`. It reads the answer off the file; ask only on `confidence: low`.
+
+
+## Correções de transcrição
+
+Para corrigir nomes em todas as ocorrências, inclusive diferenças de acento e caixa,
+leia [transcription-corrections.md](references/transcription-corrections.md) e use
+`helpers/correct_transcript.py`. Preserve os tempos e a grafia pedida. As preferências
+do projeto também orientam novas transcrições e legendas.

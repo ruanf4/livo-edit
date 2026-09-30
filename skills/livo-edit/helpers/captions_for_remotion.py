@@ -104,6 +104,8 @@ def main() -> None:
     else:
         ap.error("provide --transcript <cut.json> or an edl.json")
 
+    from transcript_spelling import correct_payload, glossary_for, load_rules
+    caps, _ = correct_payload(caps, load_rules(glossary_for(args.transcript or args.edl)))
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(caps, ensure_ascii=False, indent=2), encoding="utf-8")
     print(f"{args.output} — {len(caps)} word captions")
