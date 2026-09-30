@@ -1,0 +1,15 @@
+{
+  "name": "livo-edit-ruanf4",
+  "interface": {
+    "displayName": "Livo Edit · Ruan Duarte"
+  },
+  "plugins": [
+    {
+      "name": "livo-edit",
+      "source": {
+        "source": "local",
+        "path": "./"
+      }
+    }
+  ]
+}

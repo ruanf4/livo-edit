@@ -1,0 +1,40 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "livo-edit",
+  "version": "1.0.3",
+  "description": "Editor de vídeo por conversa: cortes, legendas animadas, zoom e tracking.",
+  "author": {
+    "name": "Ruan Duarte",
+    "url": "https://github.com/ruanf4"
+  },
+  "homepage": "https://github.com/ruanf4/livo-edit",
+  "repository": "https://github.com/ruanf4/livo-edit",
+  "license": "MIT",
+  "keywords": [
+    "video",
+    "captions",
+    "reels",
+    "portuguese"
+  ],
+  "extensions": {
+    "com.openai": {
+      "interface": {
+        "displayName": "Livo Edit",
+        "shortDescription": "Edite vídeos por conversa com legendas animadas.",
+        "developerName": "Ruan Duarte",
+        "category": "Productivity",
+        "capabilities": [
+          "Read",
+          "Write"
+        ],
+        "websiteURL": "https://github.com/ruanf4/livo-edit",
+        "defaultPrompt": [
+          "Use Livo Edit para editar meu vídeo com cortes e legendas animadas."
+        ],
+        "brandColor": "#0B0B0B",
+        "composerIcon": "./assets/livo-mark-64.png",
+        "logo": "./assets/livo-logo.png"
+      }
+    }
+  }
+}
