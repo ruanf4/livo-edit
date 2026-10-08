@@ -52,7 +52,7 @@ type Caption = {text: string; startMs: number; endMs: number};
 // srcStart (0.67.0, modo narracao): de que segundo DO ARQUIVO o clipe entra.
 // Sem ele o clipe toca do zero — o que servia ao b-roll gerado de 5 s e nao
 // serve a uma montagem que reusa um clipe longo em varios planos.
-type Insert = {kind?: 'image' | 'video'; src: string; start: number; end: number; fullscreen?: boolean; transform?: ManualTransform; crop?: MediaCrop; srcStart?: number};
+type Insert = {kind?: 'image' | 'video'; src: string; start: number; end: number; fit?: 'contain' | 'cover'; fullscreen?: boolean; transform?: ManualTransform; crop?: MediaCrop; srcStart?: number};
 // Tela dividida OFICIAL: a midia ocupa uma FAIXA e o video segue no resto.
 // kind "video" toca o arquivo (mudo) em loop de cover; bandTop escolhe qual
 // faixa vertical do video 9:16 aparece na parte dele (fracao do topo);
@@ -957,14 +957,15 @@ export const CARD_TOP = 90;
 // diretos". Corte de midia e como corte de take: instantaneo.
 //
 // O Ken-Burns fica: e movimento DENTRO do plano, nao transicao entre planos.
-const InsertFullscreen: React.FC<{src: string; totalFrames: number; kind?: 'image' | 'video'; crop?: MediaCrop; srcStart?: number}> = ({src, totalFrames, kind, crop, srcStart}) => {
+const InsertFullscreen: React.FC<{src: string; totalFrames: number; kind?: 'image' | 'video'; fit?: 'contain' | 'cover'; crop?: MediaCrop; srcStart?: number}> = ({src, totalFrames, kind, crop, srcStart, fit}) => {
+  const insertFit = fit ?? (ehVideo(src, kind) ? 'cover' : 'contain');
   const frame = useCurrentFrame();
   const {fps} = useVideoConfig();
   const trimBefore = srcStart && srcStart > 0 ? Math.round(srcStart * fps) : undefined;
-  const scale = interpolate(frame, [0, totalFrames], [1, 1.05], {extrapolateRight: 'clamp'});
+  const scale = insertFit === 'contain' ? 1 : interpolate(frame, [0, totalFrames], [1, 1.05], {extrapolateRight: 'clamp'});
   const clip = mediaCropCss(crop);
   const midia: React.CSSProperties = {
-    width: '100%', height: '100%', objectFit: 'cover',
+    width: '100%', height: '100%', objectFit: insertFit,
     ...(clip ? {clipPath: clip} : null),
   };
   return (
@@ -978,13 +979,14 @@ const InsertFullscreen: React.FC<{src: string; totalFrames: number; kind?: 'imag
   );
 };
 
-const InsertCard: React.FC<{src: string; totalFrames: number; kind?: 'image' | 'video'; transform?: ManualTransform; crop?: MediaCrop; noInicio?: boolean; srcStart?: number}> = ({src, totalFrames, kind, transform, crop, noInicio, srcStart}) => {
+const InsertCard: React.FC<{src: string; totalFrames: number; kind?: 'image' | 'video'; transform?: ManualTransform; fit?: 'contain' | 'cover'; crop?: MediaCrop; noInicio?: boolean; srcStart?: number}> = ({src, totalFrames, kind, transform, crop, noInicio, srcStart, fit}) => {
+  const insertFit = fit ?? (ehVideo(src, kind) ? 'cover' : 'contain');
   const frame = useCurrentFrame();
   const enter = entrada(frame, 9, Boolean(noInicio));
   const exit = interpolate(frame, [totalFrames - 7, totalFrames], [1, 0], {extrapolateLeft: 'clamp', extrapolateRight: 'clamp'});
   const opacity = Math.min(enter, exit);
   // dynamic zoom: the image itself grows slowly while on screen (Ken-Burns)
-  const grow = interpolate(frame, [0, totalFrames], [1, 1.08], {extrapolateRight: 'clamp'});
+  const grow = insertFit === 'contain' ? 1 : interpolate(frame, [0, totalFrames], [1, 1.08], {extrapolateRight: 'clamp'});
   const scale = interpolate(enter, [0, 1], [0.92, 1]) * grow * (transform?.scale ?? 1);
   const y = interpolate(enter, [0, 1], [26, 0]);
   // O deslocamento manual soma-se a animacao de entrada; o giro e so manual.
@@ -994,10 +996,10 @@ const InsertCard: React.FC<{src: string; totalFrames: number; kind?: 'image' | '
   return (
     <AbsoluteFill style={{justifyContent: 'flex-start', alignItems: 'center'}}>
       <Sfx src="whoosh.mp3" />
-      <div style={{width: CARD_W, height: CARD_H, marginTop: CARD_TOP, borderRadius: 28, overflow: 'hidden', opacity, scale: String(scale), translate: `${tx}px ${y + ty}px`, ...(transform?.rotation ? {rotate: `${transform.rotation}deg`} : null), boxShadow: '0 18px 50px rgba(0,0,0,0.45)'}}>
+      <div style={{width: CARD_W, height: CARD_H, marginTop: CARD_TOP, borderRadius: insertFit === 'cover' ? 28 : 0, overflow: insertFit === 'cover' ? 'hidden' : 'visible', opacity, scale: String(scale), translate: `${tx}px ${y + ty}px`, ...(transform?.rotation ? {rotate: `${transform.rotation}deg`} : null), boxShadow: '0 18px 50px rgba(0,0,0,0.45)'}}>
         {ehVideo(src, kind)
-          ? <OffthreadVideo src={staticFile(src)} muted trimBefore={srcStart && srcStart > 0 ? Math.round(srcStart * fps) : undefined} style={{width: '100%', height: '100%', objectFit: 'cover', ...(mediaCropCss(crop) ? {clipPath: mediaCropCss(crop)} : null)}} onError={aoFalharMidia} />
-          : <Img src={staticFile(src)} style={{width: '100%', height: '100%', objectFit: 'cover', ...(mediaCropCss(crop) ? {clipPath: mediaCropCss(crop)} : null)}} onError={aoFalharMidia} />}
+          ? <OffthreadVideo src={staticFile(src)} muted trimBefore={srcStart && srcStart > 0 ? Math.round(srcStart * fps) : undefined} style={{width: '100%', height: '100%', objectFit: insertFit, ...(mediaCropCss(crop) ? {clipPath: mediaCropCss(crop)} : null)}} onError={aoFalharMidia} />
+          : <Img src={staticFile(src)} style={{width: '100%', height: '100%', objectFit: insertFit, ...(mediaCropCss(crop) ? {clipPath: mediaCropCss(crop)} : null)}} onError={aoFalharMidia} />}
       </div>
     </AbsoluteFill>
   );
@@ -1014,8 +1016,8 @@ const Inserts: React.FC = () => {
         return (
           <Sequence key={i} from={from} durationInFrames={duration} layout="none">
             {it.fullscreen
-              ? <InsertFullscreen src={it.src} kind={it.kind} crop={it.crop} totalFrames={duration} srcStart={it.srcStart} />
-              : <InsertCard src={it.src} kind={it.kind} transform={it.transform} crop={it.crop} totalFrames={duration} noInicio={from === 0} srcStart={it.srcStart} />}
+              ? <InsertFullscreen src={it.src} kind={it.kind} fit={it.fit} crop={it.crop} totalFrames={duration} srcStart={it.srcStart} />
+              : <InsertCard src={it.src} kind={it.kind} fit={it.fit} transform={it.transform} crop={it.crop} totalFrames={duration} noInicio={from === 0} srcStart={it.srcStart} />}
           </Sequence>
         );
       })}

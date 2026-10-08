@@ -9,6 +9,44 @@ export function captionSnap(words,time,duration) {
 }
 const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi,n));
 const number = (n) => typeof n === 'number' && Number.isFinite(n);
+// Soltar um modelo: primeiro o trecho que contém o ponto real, depois o encaixe na
+// transcrição dentro dele. Trecho apagado volta inteiro. Nas pontas não sobram
+// retalhos: perto do início vale o trecho todo; perto do fim, o modelo começa no
+// trecho seguinte. `edge` (segundos) vem do raio em pixels da faixa; mínimo DROP_EDGE.
+export const DROP_EDGE = 0.3;
+export function captionDropRange(words, captions, duration, time, edge = DROP_EDGE) {
+  const segments=captionTimeline(captions,duration);
+  if(!segments.length)return {start:0,end:duration};
+  const t=clamp(number(time)?time:0,0,duration),near=Math.max(DROP_EDGE,number(edge)?edge:DROP_EDGE);
+  let index=segments.findIndex(s=>t>=s.start&&t<s.end);
+  if(index<0)index=segments.length-1;
+  const whole=s=>({start:s.start,end:s.end});
+  const next=()=>index<segments.length-1?whole(segments[index+1]):whole(segments[index]);
+  const current=segments[index];
+  if(current.oculto)return whole(current);
+  if(current.end-t<near&&index<segments.length-1)return next();
+  if(t-current.start<near)return whole(current);
+  const all=(words||[]).map(w=>Number(w.startMs)/1000).filter(number);
+  const starts=all.filter(n=>n>current.start&&n<current.end);
+  // Sem transcrição vale o ponto real, como no encaixe da faixa.
+  const start=all.length?[current.start,...starts].reduce((best,n)=>Math.abs(n-t)<Math.abs(best-t)?n:best,current.start):t;
+  if(start-current.start<near)return whole(current);
+  if(current.end-start<near)return next();
+  return {start,end:current.end};
+}
+// Campos que o desfazer de uma exclusão pode devolver ao edit-data.
+const RESTORABLE = {splits:'list',inserts:'list',behind:'list',animations:'list',hook:'object',soundtrack:'object',captions:'object'};
+export function LivoRestoreOperations(editData, ops) {
+  const kinds=new Set();
+  for(const op of ops||[]){
+    if(op?.op==='remove'&&RESTORABLE[op.kind]==='list')kinds.add(op.kind);
+    else if(op?.op==='disable'&&RESTORABLE[op.kind])kinds.add(op.kind);
+  }
+  if(!kinds.size||!editData)return [];
+  const valores={};
+  for(const kind of kinds)valores[kind]=editData[kind]===undefined?null:JSON.parse(JSON.stringify(editData[kind]));
+  return [{op:'livo-edit-restore',valores}];
+}
 // A faixa sempre cobre o vídeo; os vazios são intervalos ocultos explícitos.
 export function captionTimeline(captions, duration) {
   const c=captions||{},old=Array.isArray(c.segmentos)?c.segmentos.filter(s=>s&&number(s.start)&&number(s.end)&&s.end>s.start):[];
@@ -28,8 +66,20 @@ export function LivoApplyEdit(data, op) {
     if(segment){const {op:_,segmento,...patch}=op;return LivoApplyEdit(data,{op:'livo-caption-settings',start:segment.start,end:segment.end,patch});}
   }
   const timelineOps=['split-caption-segment','merge-caption-segment','livo-caption-delete','livo-caption-move','livo-caption-trim','livo-caption-restore'];
-  if (op.op !== 'livo-caption-settings' && op.op !== 'livo-split-position' && op.op !== 'livo-caption-boundary' && !timelineOps.includes(op.op)) return null;
+  if (op.op !== 'livo-caption-settings' && op.op !== 'livo-split-position' && op.op !== 'livo-caption-boundary' && op.op !== 'livo-edit-restore' && !timelineOps.includes(op.op)) return null;
   const fail = (reason) => ({ok:false,reason,changed:false,data});
+  if(op.op==='livo-edit-restore'){
+    if(!op.valores||typeof op.valores!=='object'||Array.isArray(op.valores))return fail('Estado da edição inválido.');
+    const next={...data};
+    for(const [key,value] of Object.entries(op.valores)){
+      const kind=RESTORABLE[key];
+      if(!kind)return fail('Este campo da edição não pode ser restaurado: '+key+'.');
+      if(value===null){delete next[key];continue;}
+      if(kind==='list'?!Array.isArray(value):(typeof value!=='object'||Array.isArray(value)))return fail('Valor inválido para '+key+'.');
+      next[key]=JSON.parse(JSON.stringify(value));
+    }
+    return {ok:true,data:next,changed:JSON.stringify(next)!==JSON.stringify(data)};
+  }
   if(timelineOps.includes(op.op)){
     const duration=Number(data.durationSec);if(!number(duration)||duration<=0)return fail('Duração de vídeo inválida.');
     const c={...data.captions},segments=captionTimeline(c,duration);

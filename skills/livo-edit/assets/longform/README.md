@@ -40,5 +40,10 @@ Copy `cut.mp4` into `public/`, then write `public/edit-data.json`.
 
 ## Render
 
-`npx remotion render Longform out/render.mp4`, loudnorm → `edit/final.mp4`.
+Images keep their complete aspect ratio by default (`fit: "contain"`), without
+Ken Burns zoom that clips their edges. Set `fit: "cover"` explicitly to fill
+the frame with cropping and Ken Burns. Videos retain the default `cover`;
+set `fit: "contain"` to show the entire source frame.
+
+`npx remotion render Longform out/render.mov --codec=h264 --audio-codec=pcm-16 --disallow-parallel-encoding`, loudnorm → `edit/final.mp4`.
 Keep the last ~20s visually calm (YouTube end cards).

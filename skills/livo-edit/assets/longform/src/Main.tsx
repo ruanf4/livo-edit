@@ -29,7 +29,7 @@ const fontFamily=POPPINS;
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
 
 // ============ TYPES + DATA ====================================================
-type Broll = {kind: 'image' | 'video'; src: string; start: number; dur: number};
+type Broll = {kind: 'image' | 'video'; src: string; start: number; dur: number; fit?: 'contain' | 'cover'};
 type Lower = {name: string; title?: string; start: number; dur: number};
 type Chapter = {title: string; start: number; dur?: number};
 type Callout = {text: string; start: number; dur: number; x?: number; y?: number};
@@ -64,17 +64,18 @@ const Base: React.FC = () => {
 // ============ B-ROLL CUTAWAYS (cover the talker over narration) ================
 const BrollEl: React.FC<{item: Broll; totalFrames: number}> = ({item, totalFrames}) => {
   const f = useCurrentFrame();
+  const brollFit = item.fit ?? (item.kind === 'image' ? 'contain' : 'cover');
   const inn = interpolate(f, [0, 10], [0, 1], {extrapolateLeft: 'clamp', extrapolateRight: 'clamp'});
   const out = interpolate(f, [totalFrames - 10, totalFrames], [1, 0], {extrapolateLeft: 'clamp', extrapolateRight: 'clamp'});
   const op = Math.min(inn, out);
-  const grow = interpolate(f, [0, totalFrames], [1, 1.06], {extrapolateRight: 'clamp'}); // Ken-Burns
+  const grow = brollFit === 'contain' ? 1 : interpolate(f, [0, totalFrames], [1, 1.06], {extrapolateRight: 'clamp'}); // Ken-Burns
   return (
     <AbsoluteFill style={{opacity: op}}>
       <Sfx src="whoosh.mp3" />
       {item.kind === 'image' ? (
-        <Img src={staticFile(item.src)} style={{width: '100%', height: '100%', objectFit: 'cover', transform: `scale(${grow})`}} />
+        <Img src={staticFile(item.src)} style={{width: '100%', height: '100%', objectFit: brollFit, transform: `scale(${grow})`}} />
       ) : (
-        <OffthreadVideo src={staticFile(item.src)} muted style={{width: '100%', height: '100%', objectFit: 'cover'}} />
+        <OffthreadVideo src={staticFile(item.src)} muted style={{width: '100%', height: '100%', objectFit: brollFit}} />
       )}
     </AbsoluteFill>
   );

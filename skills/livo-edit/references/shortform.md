@@ -154,8 +154,13 @@ An unchecked box is an explicit NO, not a silence. Copy the picks into
 4. **Verify with stills, batched:** `npx remotion still Reels --frame=<n> f.png`
    for the hook still (user approval), then ONE contact sheet for spot checks:
    `contact_sheet.py <render> --times t1 t2 t3 -o sheet.png` — one image, not N.
-5. **Render:** `npx remotion render Reels out/render.mp4`, then loudnorm →
-   `edit/final.mp4` (see Phase 3).
+5. **Render:** `npx remotion render Reels out/render.mov --codec=h264 --audio-codec=pcm-16 --disallow-parallel-encoding`,
+   then loudnorm → `edit/final.mp4` (see Phase 3).
+   PCM keeps Remotion's own audio sample-exact: its default AAC goes through an
+   ADTS file that drops the encoder priming, which put the audio a constant
+   +42.7 ms behind the picture in every render (measured with a flash+beep
+   reference at the head, middle and tail). The `.mov` is only the master;
+   the delivery is still `edit/final.mp4`.
 
 Never edit `src/Main.tsx`. Bespoke graphics go in `src/CustomGraphics.tsx`
 (the ONE editable file — read it only when the video needs a custom graphic).
@@ -531,9 +536,9 @@ stamp the tags. `setparams` is what makes them stick: the bare `-color_primaries
 `-color_trc` output flags silently leave both `unknown` here.
 
 ```bash
-VD=$(ffprobe -v error -select_streams v:0 -show_entries stream=duration -of default=nw=1:nk=1 out/render.mp4)
+VD=$(ffprobe -v error -select_streams v:0 -show_entries stream=duration -of default=nw=1:nk=1 out/render.mov)
 FADE=$(python3 -c "print(f'{$VD-1.5:.3f}')")
-ffmpeg -y -i out/render.mp4 -i ../cut.mp4 -i public/trilha.mp3 \
+ffmpeg -y -i out/render.mov -i ../cut.mp4 -i public/trilha.mp3 \
   -filter_complex "[0:v]scale=in_range=full:out_range=limited,format=yuv420p,\
 setparams=color_primaries=bt709:color_trc=bt709:colorspace=bt709:range=tv[vid];\
                    [1:a]adelay=33:all=1[v];\
@@ -561,7 +566,9 @@ by hand from the cue file is guesswork. Correlate first (15s+ windows, or the wh
 clip when it is short): if the offset is CONSTANT across start/middle/end there is
 no drift, and Remotion's own audio keeps the SFX with the sync intact. Measured on
 a 7.6s edit: +42.7ms at the head, the tail and the whole — constant, and only ~10ms
-from the picture's own +33ms lag. There, `-map 0:a` through the same loudnorm beats
+from the picture's own +33ms lag. That constant +42.7ms was Remotion's AAC (ADTS
+loses the encoder priming); the PCM master from step 5 removes it, so `-map 0:a`
+keeps the SFX in exact sync. There, `-map 0:a` through the same loudnorm beats
 the re-mux. Say which one you used and why.
 
 `adelay=33` is one frame at 30fps: OffthreadVideo draws the source frame one
@@ -576,7 +583,7 @@ audio (stacked captions' click/scratch), and then verify sync by hand.
 If the video has no soundtrack, the same shape without input 2:
 
 ```bash
-ffmpeg -y -i out/render.mp4 -i ../cut.mp4 -filter_complex "[1:a]adelay=33:all=1,loudnorm=I=-14:TP=-1:LRA=11[out]" \
+ffmpeg -y -i out/render.mov -i ../cut.mp4 -filter_complex "[1:a]adelay=33:all=1,loudnorm=I=-14:TP=-1:LRA=11[out]" \
   -map 0:v -map "[out]" -c:v copy -c:a aac -b:a 192k -ar 48000 -t "$VD" -movflags +faststart ../final.mp4
 ```
 

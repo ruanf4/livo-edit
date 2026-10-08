@@ -99,7 +99,11 @@ Then copy `cut.mp4` into `public/` and generate the data files below.
   lower (may overlap the top of the head); tune `fontSizePx`/`strokePx`/
   `paddingTop`/`lineHeight`. Copy written like a virality specialist; approve a
   still first.
-- **Inserts**: rounded card + shadow, upper zone, slow Ken-Burns, whoosh on entry.
+- **Inserts**: upper-zone card and whoosh on entry. Images default to `fit: "contain"`,
+  showing the entire source without cropping corners or Ken Burns zoom. Explicit
+  `fit: "cover"` enables the rounded crop and slow zoom. Videos keep `cover` by
+  default; use `contain` to show the entire frame. Desktop drag-and-drop imports
+  both images and videos with `contain`, using the video's actual duration.
 - **Behind-the-subject**: elements top-anchored; matte gets the same camera via
   `frameOffset`; ProRes 4444 + `<OffthreadVideo transparent>`.
 - **Audio**: whoosh ~0.09 / pop ~0.12 / music ~0.0445 (−15 dB from the former
@@ -108,7 +112,7 @@ Then copy `cut.mp4` into `public/` and generate the data files below.
 
 ## Render
 
-`npx remotion render Reels out/render.mp4`, loudnorm → `edit/final.mp4`.
+`npx remotion render Reels out/render.mov --codec=h264 --audio-codec=pcm-16 --disallow-parallel-encoding`, loudnorm → `edit/final.mp4`.
 Verify stills at cut boundaries (no black edges) before the full render.
 `generate_sfx.py` regenerates the sfx pack if ever needed.
 
