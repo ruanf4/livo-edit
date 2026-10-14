@@ -678,6 +678,9 @@ skill prompt is resent every turn.
 
 ## Helpers de Fase 2/3
 
+Para transcrição em lote, reaproveitamento de modelos/cache e exportação mais leve,
+consulte [performance.md](performance.md). Preserve resolução, fps e sincronismo.
+
 - **`captions_for_remotion.py`** (karaoke JSON) · **`face_track.py`** (eye-track JSON) · **`person_matte.py`** (RVM alpha matte; `uv sync --extra matting`) · **`pexels_search.py`** · **`wikimedia_images.py`** (no key, brands/people first choice) · **`google_images.py`** (fallback, mind rights) · **`captions_srt.py`** (longform .srt) · **`chapters.py`** (YouTube chapters) · **`treblo_music.py`** (AI soundtrack — pass a context-driven MUSICAL vibe: genre + instruments + tempo + mood, not SFX-y phrasing; auto-framed as a composed instrumental).
 
 ---

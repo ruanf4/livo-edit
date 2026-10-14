@@ -106,6 +106,9 @@ existe.
 
 ## Helpers de Fase 2/3
 
+Para transcrição em lote e reutilização do modelo, consulte [performance.md](performance.md).
+Não retranscreva para corrigir uma grafia nem exporte várias versões simultaneamente.
+
 ---
 
 ## Chaves de API (pré-configuradas pelo operador)

@@ -55,6 +55,7 @@ import tempfile
 import time
 from pathlib import Path
 from transcript_spelling import correct_payload, glossary_for, load_rules, prompt_for
+from transcription_models import cached_model
 
 
 WHISPERX_MODEL = "large-v3"
@@ -106,15 +107,15 @@ def call_whisperx(
         print(f"    whisperx on {device}/{compute_type}, model {model_name}", flush=True)
 
     audio = whisperx.load_audio(str(audio_path))
-    model = whisperx.load_model(model_name, device, compute_type=compute_type,
+    model = cached_model('whisperx', (model_name,device,compute_type,language,prompt),lambda: whisperx.load_model(model_name, device, compute_type=compute_type,
                                 language=language,
-                                asr_options={'beam_size': 5, 'initial_prompt': prompt or None})
+                                asr_options={'beam_size': 5, 'initial_prompt': prompt or None}))
     result = model.transcribe(audio, batch_size=8, language=language)
     detected = result.get("language") or language or ""
 
     aligned_ok = True
     try:
-        align_model, metadata = whisperx.load_align_model(language_code=detected, device=device)
+        align_model, metadata = cached_model('alignment',(detected,device),lambda:whisperx.load_align_model(language_code=detected, device=device))
         result = whisperx.align(result["segments"], align_model, metadata, audio, device,
                                 return_char_alignments=False)
     except Exception as e:
@@ -290,7 +291,7 @@ def transcribe_one(
 
 def main() -> None:
     ap = argparse.ArgumentParser(description="Transcribe a video locally with WhisperX")
-    ap.add_argument("video", type=Path, help="Path to video file")
+    ap.add_argument("video", type=Path, nargs='+', help="Um ou mais vídeos; reutiliza o modelo entre os arquivos.")
     ap.add_argument(
         "--edit-dir",
         type=Path,
@@ -321,18 +322,26 @@ def main() -> None:
     ap.add_argument('--force', action='store_true', help='Refaz a transcrição mesmo se houver cache')
     args = ap.parse_args()
 
-    video = args.video.resolve()
-    if not video.exists():
-        sys.exit(f"video not found: {video}")
+    outputs = {}
+    for item in args.video:
+        video = item.resolve()
+        output = (args.edit_dir or video.parent/'edit').resolve()/'transcripts'/f'{video.stem}.json'
+        if output in outputs and outputs[output] != video:
+            ap.error('Vídeos com o mesmo nome gravariam no mesmo cache. Use nomes diferentes ou edit-dir separados.')
+        outputs[output] = video
 
-    transcribe_one(
-        video=video,
-        edit_dir=(args.edit_dir or (video.parent / "edit")).resolve(),
-        language=args.language,
-        num_speakers=args.num_speakers,
-        model=args.model,
-        prompt=args.prompt, glossary=args.glossary, force=args.force,
-    )
+    for item in args.video:
+        video = item.resolve()
+        if not video.exists():
+            sys.exit(f"video not found: {video}")
+        transcribe_one(
+            video=video,
+            edit_dir=(args.edit_dir or (video.parent / "edit")).resolve(),
+            language=args.language,
+            num_speakers=args.num_speakers,
+            model=args.model,
+            prompt=args.prompt, glossary=args.glossary, force=args.force,
+        )
 
 
 if __name__ == "__main__":

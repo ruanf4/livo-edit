@@ -17,6 +17,9 @@ no ambiente de execução ou uma fonte explicitamente fornecida pelo usuário.
    estratégia e a aprovação de corte segundo as fases descritas em SKILL.md.
 5. Leia o guia shortform ou longform conforme o formato. Copie o template,
    configure edit-data.json, gere captions/track/cues e renderize o resultado.
+   Para rapidez, siga performance.md: transcreva vários vídeos numa única execução,
+   reutilize cache/transcrição e evite exportações simultâneas. Preserve a qualidade
+   combinada; não reduza os fps silenciosamente.
 6. Entregue o arquivo real cut.mp4 para aprovar o corte e final.mp4 no final,
    usando o mecanismo de download de arquivos disponível no Work. Um endereço
    localhost de preview serve apenas ao ambiente onde o servidor está rodando;

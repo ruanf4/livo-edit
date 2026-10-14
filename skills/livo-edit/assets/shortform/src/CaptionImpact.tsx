@@ -9,6 +9,7 @@
 import React from 'react';
 import {AbsoluteFill, interpolate, spring, useCurrentFrame, useVideoConfig, staticFile, delayRender, continueRender} from 'remotion';
 import {useProjectData} from './caption-data';
+import {cachedPhrases,captionTextWidth,clearCaptionMeasurements,activePhraseIndices} from './caption-performance';
 
 // TODAS as fontes locais (public/fonts), carregadas via @font-face — sem depender
 // de rede nem de @remotion/google-fonts, então roda igual na skill e nos apps
@@ -48,7 +49,7 @@ function loadFaces(): void {
       FACES.map(([family, file, weight, style]) => {
         try {
           const face = new FontFace(family, `url(${staticFile('fonts/' + file)})`, {weight, style});
-          return face.load().then((f) => {(document as any).fonts.add(f);}).catch(() => undefined);
+          return face.load().then((f) => {(document as any).fonts.add(f);clearCaptionMeasurements();}).catch(() => undefined);
         } catch {
           return Promise.resolve();
         }
@@ -56,7 +57,7 @@ function loadFaces(): void {
     );
     let timer: ReturnType<typeof setTimeout>;
     facesPromise=Promise.race([loading, new Promise<void>((resolve) => {timer = setTimeout(resolve, 5000);})])
-      .finally(() => {clearTimeout(timer); continueRender(h);});
+      .finally(() => {clearCaptionMeasurements();clearTimeout(timer); continueRender(h);});
   } catch {
     continueRender(h);
   }
@@ -129,11 +130,8 @@ const rnd = (i: number) => {const x = Math.sin(i * 127.1 + 311.7) * 43758.5453; 
 // Medir a fonte real e reservar margem para brilho, itálico e animações.
 function fitSize(text:string, requested:number, width:number, p:Preset, weight=700):number {
   if(typeof document==='undefined')return requested;
-  const canvas=document.createElement('canvas');
-  const ctx=canvas.getContext('2d');
-  if(!ctx)return requested;
-  ctx.font=`${p.italic?'italic ':''}${weight} ${requested}px "${FAM(p)}"`;
-  const measured=ctx.measureText(cx(clean(text),p)).width;
+  const measured=captionTextWidth(cx(clean(text),p),`${p.italic?'italic ':''}${weight} ${requested}px "${FAM(p)}"`);
+  if(measured===null)return requested;
   return Math.min(requested,requested*width/Math.max(1,measured));
 }
 function captionScale(){const {editData}=useProjectData();return Math.max(.1,((editData as any).captions?.fontSize??61)/61);}
@@ -275,17 +273,14 @@ export const CaptionImpact: React.FC = () => {
   const frame = useCurrentFrame()+Math.round((C.startSec??0)*fps);
   const preset = PRESETS[C.style ?? 'impacto'] ?? PRESETS['impacto'];
   const p = {...preset,accent:C.accent??preset.accent};
-  const phrases = buildPhrases(captions as Word[], C);
+  const phrases = cachedPhrases(captions as Word[],C.gapSec??.45,C.maxWords??8,()=>buildPhrases(captions as Word[],C));
+  const indices=activePhraseIndices(phrases,frame,fps,durationInFrames);
   const bottom = C.bottom ?? C.paddingBottom ?? Math.round(height * (p.struct === 'flow' ? 0.3 : p.struct === 'single' ? 0.42 : 0.34));
   return (
     <AbsoluteFill>
-      {phrases.map((phrase, i) => {
-        const from = Math.round((phrase[0].startMs / 1000) * fps);
-        const nextStart = i + 1 < phrases.length ? Math.round((phrases[i + 1][0].startMs / 1000) * fps) : durationInFrames;
-        if (frame < from || frame >= nextStart) return null;
-        const inner = p.struct === 'flow' ? <Flow phrase={phrase} p={p} /> : p.struct === 'single' ? <Single phrase={phrase} p={p} /> : <Stack phrase={phrase} p={p} />;
-        return <AbsoluteFill key={i} style={{justifyContent: 'flex-end', alignItems: 'center', paddingBottom: bottom}}>{inner}</AbsoluteFill>;
-      })}
+      {indices.map(index=>{const phrase=phrases[index];return <AbsoluteFill key={index} style={{justifyContent:'flex-end',alignItems:'center',paddingBottom:bottom}}>
+        {p.struct==='flow'?<Flow phrase={phrase} p={p}/>:p.struct==='single'?<Single phrase={phrase} p={p}/>:<Stack phrase={phrase} p={p}/>}
+      </AbsoluteFill>;})}
     </AbsoluteFill>
   );
 };

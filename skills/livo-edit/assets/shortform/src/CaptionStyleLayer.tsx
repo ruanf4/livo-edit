@@ -11,6 +11,7 @@ export const CaptionStyleLayer: React.FC<{children:(style:string)=>React.ReactNo
   const {fps,width,height}=useVideoConfig();
   const frame=useCurrentFrame()+Math.round((c.startSec ?? 0)*fps);
   const segment=c.segmentos?.find((s:any)=>frame>=Math.round(s.start*fps)&&frame<Math.round(s.end*fps));
+  const value=React.useMemo(()=>{
   const active={...c,...segment,style:captionStyle(segment?.style ?? c.style)};
   const scale=active.livoScale ?? 1;
   // Aplicar escala nas fontes mantém o ponto de ancoragem e a posição escolhida.
@@ -23,8 +24,11 @@ export const CaptionStyleLayer: React.FC<{children:(style:string)=>React.ReactNo
     if(!keep.length)return [];
     return [{...cue,startMs:Math.max(cue.startMs,segment.start*1000),endMs:Math.min(cue.endMs,segment.end*1000),lines:keep.map((i:number)=>lines[i]),...Object.fromEntries(['lineStyles','lineBoost','lineEmph'].filter(key=>Array.isArray(cue[key])).map(key=>[key,keep.map((i:number)=>cue[key][i])]))}];
   }):data.cues;
+  return {...data,captions,cues,editData:{...edit,captions:resolved}};
+  },[data,edit,c,segment,fps]);
+  const active=value.editData.captions;
   if (active.oculto) return null;
-  return <ProjectDataProvider value={{...data,captions,cues,editData:{...edit,captions:resolved}}}>
+  return <ProjectDataProvider value={value}>
     <div data-livo-caption-style={active.style} style={{position:'absolute',inset:0,pointerEvents:'none',transform:`translate(${(active.livoOffsetX??0)*width}px,${(active.livoOffsetY??0)*height}px)`}}>
       {children(active.style)}
     </div>
