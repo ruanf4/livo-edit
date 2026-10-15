@@ -477,11 +477,18 @@ def extract_all_segments(
 # -------- Lossless concat ----------------------------------------------------
 
 
+def _concat_entry(path: Path) -> str:
+    """Line for ffmpeg's concat demuxer. Inside single quotes an apostrophe must be
+    written as '\\'' — otherwise a folder like "Joana's videos" breaks the render."""
+    escaped = str(path.resolve()).replace("'", "'\\''")
+    return f"file '{escaped}'\n"
+
+
 def concat_segments(segment_paths: list[Path], out_path: Path, edit_dir: Path) -> None:
     """Lossless concat via the concat demuxer. No re-encode."""
     out_path.parent.mkdir(parents=True, exist_ok=True)
     concat_list = edit_dir / "_concat.txt"
-    concat_list.write_text("".join(f"file '{p.resolve()}'\n" for p in segment_paths))
+    concat_list.write_text("".join(_concat_entry(p) for p in segment_paths), encoding="utf-8")
 
     cmd = [
         "ffmpeg", "-y",
@@ -615,7 +622,7 @@ def assemble_jcut(plan: list[dict], out_path: Path, edit_dir: Path) -> None:
     """Concat the video track, sum the offset audio tracks, mux them together."""
     work = edit_dir / "clips_graded"
     vlist = edit_dir / "_concat_jcut.txt"
-    vlist.write_text("".join(f"file '{p['video_path'].resolve()}'\n" for p in plan))
+    vlist.write_text("".join(_concat_entry(p['video_path']) for p in plan), encoding="utf-8")
 
     video_only = work / "_jcut_video.mp4"
     run(["ffmpeg", "-y", "-f", "concat", "-safe", "0", "-i", str(vlist),

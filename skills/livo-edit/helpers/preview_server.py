@@ -27,6 +27,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+from urllib.parse import unquote
 import array
 import json
 import re
@@ -164,6 +165,9 @@ class Handler(BaseHTTPRequestHandler):
                         end = min(int(m.group(2)), size - 1)
                 elif m.group(2):  # suffix range: last N bytes
                     start = max(0, size - int(m.group(2)))
+                if start >= size or start > end:
+                    self._hdr(416, "text/plain", 0, {"Content-Range": f"bytes */{size}"})
+                    return
                 code = 206
         length = end - start + 1
         extra = {"Content-Range": f"bytes {start}-{end}/{size}"} if code == 206 else None
@@ -182,8 +186,15 @@ class Handler(BaseHTTPRequestHandler):
                 remaining -= len(chunk)
 
     def _safe(self, base: Path, rel: str) -> Path | None:
-        p = (base / rel.lstrip("/")).resolve()
-        return p if str(p).startswith(str(base.resolve())) else None
+        # is_relative_to, não startswith: "edit-old" começa com "edit" e escaparia da raiz.
+        p = (base / unquote(rel).lstrip("/")).resolve()
+        return p if p.is_relative_to(base.resolve()) else None
+
+    def _local_host(self) -> bool:
+        """Só aceita o próprio endereço local: barra DNS rebinding de páginas da web."""
+        port = self.server.server_address[1]
+        host = (self.headers.get("Host") or "").strip().lower()
+        return host in (f"127.0.0.1:{port}", f"localhost:{port}", "127.0.0.1", "localhost")
 
     def _current_video(self) -> Path | None:
         state_p = self.root / "state.json"
@@ -198,6 +209,9 @@ class Handler(BaseHTTPRequestHandler):
 
     # ---- routes ----
     def do_GET(self) -> None:  # noqa: N802
+        if not self._local_host():
+            self._json({"error": "host not allowed"}, 403)
+            return
         path = self.path.split("?", 1)[0]
         if path in ("/", "/index.html"):
             self._send_file(APP_DIR / "index.html")
@@ -220,10 +234,25 @@ class Handler(BaseHTTPRequestHandler):
         if self.path.split("?", 1)[0] != "/api/save":
             self._json({"error": "unknown route"}, 404)
             return
+        # Qualquer página aberta no navegador consegue mandar POST "simples" (text/plain) a
+        # 127.0.0.1; o conteúdo salvo vira instrução para o agente. Exigir JSON (preflight
+        # CORS), o próprio Host e, quando houver, a própria Origin.
+        port = self.server.server_address[1]
+        origin = self.headers.get("Origin")
+        ctype = (self.headers.get("Content-Type") or "").split(";", 1)[0].strip().lower()
+        if (not self._local_host() or ctype != "application/json"
+                or (origin and origin.lower() not in (f"http://127.0.0.1:{port}", f"http://localhost:{port}"))):
+            self._json({"error": "request not allowed"}, 403)
+            return
         try:
             length = int(self.headers.get("Content-Length", "0"))
+            if not 0 <= length <= 5 * 1024 * 1024:
+                raise ValueError("Content-Length")
             body = json.loads(self.rfile.read(length) or b"{}")
         except (ValueError, json.JSONDecodeError):
+            self._json({"error": "invalid JSON"}, 400)
+            return
+        if not isinstance(body, dict):
             self._json({"error": "invalid JSON"}, 400)
             return
         body["savedAt"] = time.strftime("%Y-%m-%d %H:%M:%S")

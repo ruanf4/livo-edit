@@ -48,6 +48,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import os
 import json
 import subprocess
 import sys
@@ -60,6 +61,13 @@ from transcription_models import cached_model
 
 WHISPERX_MODEL = "large-v3"
 
+
+
+def _write_json_atomic(path: Path, payload: dict) -> None:
+    """Grava em arquivo temporário e troca: uma interrupção nunca deixa JSON truncado."""
+    tmp = path.with_name(path.name + ".tmp")
+    tmp.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+    os.replace(tmp, path)
 
 def _whisperx_device() -> tuple[str, str]:
     """Pick device and compute type for WhisperX.
@@ -245,11 +253,17 @@ def transcribe_one(
     out_path = transcripts_dir / f"{video.stem}.json"
 
     rules = load_rules(glossary or glossary_for(edit_dir))
+    cached = None
     if out_path.exists() and not force:
-        cached = json.loads(out_path.read_text(encoding='utf-8'))
+        try:
+            cached = json.loads(out_path.read_text(encoding='utf-8'))
+        except json.JSONDecodeError:
+            # Cache truncado (processo interrompido no meio da gravação): transcrever de novo.
+            cached = None
+    if cached is not None:
         corrected, _ = correct_payload(cached, rules)
         if corrected != cached:
-            out_path.write_text(json.dumps(corrected, ensure_ascii=False, indent=2), encoding='utf-8')
+            _write_json_atomic(out_path, corrected)
         if verbose:
             print(f"cached: {out_path.name}")
         return out_path
@@ -278,7 +292,7 @@ def transcribe_one(
         "_transcription_backend": tag,
     }
     payload, _ = correct_payload(payload, rules)
-    out_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding='utf-8')
+    _write_json_atomic(out_path, payload)
     dt = time.time() - t0
 
     if verbose:

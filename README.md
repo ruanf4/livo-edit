@@ -8,8 +8,19 @@ Transforme seu vídeo em Reels, TikTok, Shorts ou conteúdo horizontal. A Livo E
 analisa a fala, propõe os cortes, prepara o vídeo e aplica legendas animadas após
 sua aprovação. Você descreve o resultado; o agente executa a edição.
 
-Este repositório distribui o **plugin e a skill**. O aplicativo desktop é um produto
-separado. Os arquivos dos seus vídeos e chaves de API não fazem parte deste pacote.
+Este repositório distribui o **plugin e a skill** e, em [Releases](https://github.com/ruanf4/livo-edit/releases/latest),
+os **instaladores do aplicativo desktop**. Os arquivos dos seus vídeos e chaves de API não fazem parte deste pacote.
+
+## Aplicativo desktop (Windows e Mac)
+
+Baixe a versão mais recente em **[Releases](https://github.com/ruanf4/livo-edit/releases/latest)**:
+
+- **Windows:** `LivoEditSetup.exe`
+- **Mac Apple Silicon (M1 ou mais novo):** `LivoEdit-mac-apple-silicon.zip` · **Mac Intel:** `LivoEdit-mac-intel.zip`
+  (descompacte e siga o `LEIA-ME.txt`)
+
+Ao abrir, informe o e-mail da compra e a key `LIVOEDIT-XXXX-XXXX-XXXX` recebida por e-mail.
+A licença vale para 1 computador. Suporte: suportelivolive@gmail.com
 
 ## Usar no ChatGPT Work pelo celular
 

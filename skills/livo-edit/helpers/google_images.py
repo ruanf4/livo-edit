@@ -17,6 +17,7 @@ from __future__ import annotations
 import argparse
 import os
 import sys
+import time
 from pathlib import Path
 
 import requests
@@ -27,6 +28,49 @@ RIGHTS = {
     "commercial": "cc_publicdomain|cc_attribute|cc_sharealike|cc_noncommercial",
 }
 
+
+
+
+PNG = bytes.fromhex("89504e470d0a1a0a")
+JPEG = bytes.fromhex("ffd8ff")
+
+
+def image_extension(data: bytes) -> str | None:
+    """Extensão pelos bytes iniciais; None quando não é imagem."""
+    if data.startswith(JPEG):
+        return ".jpg"
+    if data.startswith(PNG):
+        return ".png"
+    if data.startswith(b"GIF8"):
+        return ".gif"
+    if data[:4] == b"RIFF" and data[8:12] == b"WEBP":
+        return ".webp"
+    return None
+
+MAX_IMAGE_BYTES = 40 * 1024 * 1024
+MAX_IMAGE_SECONDS = 90
+
+
+def fetch_image(link: str) -> bytes:
+    """Baixa uma imagem de um site qualquer com limites: só http(s), status 2xx, até
+    40 MB e 90 s no total, e só bytes de imagem de verdade (página de erro HTML não vira .jpg)."""
+    if not link.lower().startswith(("http://", "https://")):
+        raise ValueError("endereço não é http(s)")
+    started = time.monotonic()
+    with requests.get(link, timeout=30, stream=True, headers={"User-Agent": "Mozilla/5.0"}) as r:
+        r.raise_for_status()
+        chunks, size = [], 0
+        for chunk in r.iter_content(64 * 1024):
+            size += len(chunk)
+            if size > MAX_IMAGE_BYTES:
+                raise ValueError("imagem maior que 40 MB")
+            if time.monotonic() - started > MAX_IMAGE_SECONDS:
+                raise TimeoutError("download passou de 90 s")
+            chunks.append(chunk)
+    data = b"".join(chunks)
+    if image_extension(data) is None:
+        raise ValueError("o endereço não devolveu uma imagem")
+    return data
 
 def load_keys() -> tuple[str, str]:
     vals: dict[str, str] = {}
@@ -84,11 +128,12 @@ def main() -> None:
         if not link:
             continue
         try:
-            data = requests.get(link, timeout=60, headers={"User-Agent": "Mozilla/5.0"}).content
+            data = fetch_image(link)
         except Exception as e:
             print(f"  x {link[:60]}: {e}")
             continue
-        dest = args.out_dir / f"{slug}-{i+1}.jpg"
+        ext = image_extension(data)
+        dest = args.out_dir / f"{slug}-{i+1}{ext}"
         dest.write_bytes(data)
         saved += 1
         page = (it.get("image", {}) or {}).get("contextLink", "")

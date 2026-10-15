@@ -304,6 +304,9 @@ def _rmtree(path: Path) -> None:
         shutil.rmtree(path, onerror=handler)
 
 
+UV_SYNC_FAILURES: list[str] = []
+
+
 def run_uv_sync(dest: Path) -> bool:
     """Install the Python dependencies. Returns False if uv is missing."""
     if not shutil.which("uv"):
@@ -314,7 +317,8 @@ def run_uv_sync(dest: Path) -> bool:
     if r.returncode != 0:
         log("  ! uv sync falhou:")
         log("    " + (r.stderr or "").strip()[-600:])
-        return True    # uv exists; the failure is a separate problem
+        UV_SYNC_FAILURES.append(str(dest))
+        return True    # uv exists; the failure is reported in the summary
     return True
 
 
@@ -477,6 +481,16 @@ def main() -> None:
     if skipped:
         log("Instalação parcial — veja o aviso acima antes de usar.")
         return
+
+    # Nada instalado (todos os destinos falharam) ou dependências Python quebradas:
+    # não dizer "Tudo pronto" e não quebrar com IndexError.
+    if not instalados:
+        log("Nada foi instalado — corrija os erros acima e rode este comando de novo.")
+        sys.exit(1)
+    if UV_SYNC_FAILURES:
+        log("As dependências Python não terminaram de instalar (veja o erro do uv sync acima).")
+        log("Rode este comando de novo depois de corrigir; a skill copiada permanece.")
+        sys.exit(1)
 
     # Name the agents it actually wrote to, not the three it supports. Telling
     # someone to use the skill in Codex when they only run Claude Code sends
