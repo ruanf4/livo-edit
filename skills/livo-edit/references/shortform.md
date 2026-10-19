@@ -175,13 +175,13 @@ optional logo row), **`realce`** (each line on a solid accent marker block),
 ### The accent colour (`accent` in preview_style.json)
 
 `realce`, `misto` and the `stacked` caption are the only things that paint an
-accent; the default is `#ff5200`. The user picks it on the Estilo tab and it
+accent; the default is `#affc00` (Livo Edit lime; the original Edvid orange was `#ff5200`). The user picks it on the Estilo tab and it
 arrives as a hex — set it on **`hook.accent`** and **`captions.accent`** in
 edit-data.json so headline and caption stay the same colour. `preview_style.json`
 also carries `accentUsed`: when it is `false`, the picked styles have no accent
 and the colour is not a request to find somewhere to put one.
 
-Hardcoding `#ff5200` anywhere in the template re-breaks this — the preview will
+Hardcoding `#affc00` (or any accent) anywhere in the template re-breaks this — the preview will
 show the user's colour and the render will show orange, which is worse than not
 offering the choice.
 
@@ -255,7 +255,7 @@ still there as a montage over real footage if a still is useful.)
     blur on the highlighted word only reads because everything else is still.
 - **`"stacked"`**: words stacked tight, mixing per line — Poppins bold-italic
   (white→gray gradient) / Poppins regular (smaller) / Playfair serif bold-italic
-  in ORANGE `#ff5200` / Poppins bold. Emphasis words appear solo; key ones get a
+  in the ACCENT colour (default lime `#affc00`) / Poppins bold. Emphasis words appear solo; key ones get a
   hand-drawn green pencil ellipse. **Baked SFX** (no extra step, no Premiere): a
   **click** on every solo word, a **scratch** when a word is circled.
 
@@ -324,7 +324,7 @@ As palavras compridas são medidas e ajustadas à largura, mantendo margens.
 
 Exemplo de intro animada, seguida de legenda simples:
 ```json
-{"captions":{"enabled":true,"style":"simples","accent":"#ff5200",
+{"captions":{"enabled":true,"style":"simples","accent":"#affc00",
  "segmentos":[{"start":0,"end":3,"style":"destaque","accent":"#22cc88","livoScale":1.2}]}}
 ```
 Cada intervalo também pode ter `personalizada` (fonte já copiada pelo app),
@@ -652,7 +652,7 @@ skill prompt is resent every turn.
 - Treating an unchecked element as "não pediu". It is an explicit NO: the user
   looked at "Movimento de tracking" and left it off. `watch_edits.py` prints the
   `fora:` line for exactly this reason.
-- Hardcoding `#ff5200` (or any accent) in the template. The Estilo tab lets the
+- Hardcoding `#affc00` (or any accent) in the template. The Estilo tab lets the
   user pick it, so a literal makes the preview show their colour and the render
   show orange — worse than not offering the choice. Feed `accent` into
   `hook.accent` + `captions.accent`.

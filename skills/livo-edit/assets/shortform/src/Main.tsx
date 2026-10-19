@@ -273,7 +273,7 @@ export const activeSplitAt = (splits: readonly Split[], globalFrame: number, fps
 // Cor de destaque padrao do Livo Edit, usada quando o edit-data.json nao traz uma.
 // Antes ela estava literal dentro de cada estilo, e a escolha do usuario na
 // aba Estilos era silenciosamente ignorada no render.
-export const LIVOEDIT_ACCENT = '#ff5200';
+export const LIVOEDIT_ACCENT = '#affc00';
 
 // ENTRADA NO PRIMEIRO QUADRO: nao existe.
 //
@@ -1320,6 +1320,14 @@ const HookInner: React.FC<{totalFrames: number; noInicio?: boolean}> = ({totalFr
     whiteSpace: 'nowrap',
   };
 
+  // Texto legível sobre o bloco: escuro em fundos claros, branco nos escuros.
+  const livoTextoSobre = (cor: string) => {
+    const m = /^#?([0-9a-f]{6})$/i.exec(String(cor ?? '').trim());
+    if (!m) return '#fff';
+    const n = parseInt(m[1], 16);
+    const lin = (v: number) => { const c = v / 255; return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; };
+    return 0.2126 * lin(n >> 16) + 0.7152 * lin((n >> 8) & 255) + 0.0722 * lin(n & 255) > 0.45 ? '#0b0b0b' : '#fff';
+  };
   if (styleId === 'realce') {
     return (
       <AbsoluteFill style={quadro}>
@@ -1330,7 +1338,7 @@ const HookInner: React.FC<{totalFrames: number; noInicio?: boolean}> = ({totalFr
               key={i}
               style={{
                 background: P?.fundo?.cor ?? accent,
-                color: corDoTexto,
+                color: P?.cor ?? livoTextoSobre(P?.fundo?.cor ?? accent),
                 fontWeight: S.weights[1],
                 fontSize: size,
                 padding: '0.08em 0.3em 0.16em',

@@ -64,7 +64,7 @@ function loadFaces(): void {
 }
 
 // paleta de destaque (tokens: legenda_neon etc.)
-const RED = '#f50808';
+const RED = '#affc00';
 const YELLOW = '#ffe500';
 const CYAN = '#34dfff';
 const WHITE = '#fafafa';

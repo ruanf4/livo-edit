@@ -1081,7 +1081,7 @@ const normHex = (v) => {
  * the colour, and saying so beats letting the user wonder why the previews did
  * not move. Mirrors the template — update both together. */
 const ACCENT_USERS = {headlines: ['realce', 'misto'], captions: ['stacked']};
-const ACCENT_DEFAULT = '#ff5200';
+const ACCENT_DEFAULT = '#affc00';
 
 function applyAccent() {
   $('styleSetup').style.setProperty('--hl-accent', S.style.accent || ACCENT_DEFAULT);

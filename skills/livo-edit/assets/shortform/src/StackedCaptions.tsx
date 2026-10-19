@@ -4,7 +4,7 @@
  *
  * Look: words stacked vertically, tight, mixing per line — Poppins bold-italic
  * with a white→light-gray gradient, Poppins regular (smaller), Playfair serif
- * bold-italic in ORANGE #ff5200, Poppins bold. Emphasis words appear solo; some
+ * bold-italic in ORANGE #affc00, Poppins bold. Emphasis words appear solo; some
  * get a hand-drawn green "pencil" ellipse. Words rise in one by one.
  *
  * Baked SFX (no Premiere): a click on every solo word, a scratch when a word is
@@ -85,7 +85,7 @@ const Cue: React.FC<{cue: CueData; cueDurationFrames: number}> = ({cue, cueDurat
   const {fps, width, height} = useVideoConfig();
   const D = useEditData();
   const CAP = capCfgOf(D);
-  const LINE_STYLES = lineStylesFor(CAP.accent ?? '#ff5200');
+  const LINE_STYLES = lineStylesFor(CAP.accent ?? '#affc00');
   const OFFSET_Y = CAP.stackedOffsetY ?? 0.156;
   const FONT_SCALE = CAP.fontScale ?? 0.8;
 

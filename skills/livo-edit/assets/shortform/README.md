@@ -89,7 +89,7 @@ Then copy `cut.mp4` into `public/` and generate the data files below.
 - **Captions**: two styles via `captions.style`. **karaoke** (default) — one
   line ≤3 words, words rise in, Poppins Black, lower third, `measureText` fit
   into `safeWidth` 720 (action-rail safe). **stacked** — multi-font vertical
-  stack (Poppins bold-italic gradient / regular / Playfair serif orange #ff5200 /
+  stack (Poppins bold-italic gradient / regular / Playfair serif in the accent colour, default lime #affc00 /
   bold), solo emphasis words, green pencil ellipse, and baked click/scratch SFX;
   driven by `caption-cues.json` (from `caption_style.py`). Reference:
   `caption-styles/stacked.png`.

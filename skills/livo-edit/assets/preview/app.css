@@ -1,13 +1,13 @@
 /* Livo Edit preview — dark glassmorphism, marca Livo Edit: preto e branco — #ffffff / #c8c8c8 / #8a8a8a */
 :root {
-  --primary: #ffffff;
+  --primary: #affc00;   /* destaque da identidade (verde-limão) nos detalhes */
   --secondary: #c8c8c8;
   --tertiary: #8a8a8a;
   /* Accent painted by the text styles that carry one (realce/misto headlines,
      stacked captions). NOT --primary: that is app chrome, and the two drifting
      apart is the point — the user picks this one, the UI keeps its own. JS
      overrides it on #styleSetup from the pick. */
-  --hl-accent: #ff5200;
+  --hl-accent: #affc00;
   --bg0: #08090c;
   --bg1: #10141b;
   --glass: rgba(255, 255, 255, 0.045);
@@ -99,7 +99,7 @@ header {
 .btn:hover { filter: brightness(1.25); }
 .btn:active { transform: scale(0.97); }
 .btn.primary {
-  background: linear-gradient(135deg, var(--primary), #d6d6d6);
+  background: linear-gradient(135deg, var(--primary), #93d900);
   border-color: transparent;
   color: #0b0b0b;
 }
@@ -312,7 +312,7 @@ input[type="range"]::-webkit-slider-thumb {
 }
 .tl-chip svg { width: 16px; height: 16px; fill: currentColor; display: block; }
 .tl-chip.teal { color: var(--secondary); border-color: rgba(200, 200, 200, 0.3); background: rgba(200, 200, 200, 0.09); }
-.tl-chip.orange { color: var(--primary); border-color: rgba(255, 255, 255, 0.3); background: rgba(255, 255, 255, 0.09); }
+.tl-chip.orange { color: var(--primary); border-color: rgba(175, 252, 0, 0.35); background: rgba(175, 252, 0, 0.09); }
 .tl-chip.olive { color: #a8a8a8; border-color: rgba(168, 168, 168, 0.3); background: rgba(168, 168, 168, 0.09); }
 .tl-chip.notes { color: #ff5470; border-color: rgba(255, 84, 112, 0.32); background: rgba(255, 84, 112, 0.1); }
 
@@ -650,7 +650,7 @@ kbd {
   width: 14px;
   height: 14px;
   border-radius: 50%;
-  background: var(--swatch-fill, #ff5200);
+  background: var(--swatch-fill, #affc00);
   box-shadow: 0 0 0 1.5px rgba(0, 0, 0, 0.45), 0 0 0 2.5px rgba(255, 255, 255, 0.75);
 }
 .swatch.custom input[type='color'] {
@@ -703,7 +703,7 @@ kbd {
   transition: border-color 0.15s, background 0.15s;
 }
 .opt:hover { border-color: rgba(255, 255, 255, 0.22); }
-.opt.on { border-color: var(--primary); background: rgba(255, 255, 255, 0.07); }
+.opt.on { border-color: var(--primary); background: rgba(175, 252, 0, 0.08); }
 /* only shown where the catalog has a SINGLE option — it explains the lone card */
 .opt.ghost {
   border-style: dashed;
@@ -896,7 +896,7 @@ kbd {
 .hl-realce { display: flex; flex-direction: column; align-items: center; gap: 2px; }
 .hl-realce .hl-block {
   background: var(--hl-accent);
-  color: #fff;
+  color: #0b0b0b;   /* legível sobre o destaque claro, como no vídeo */
   font-weight: 900;
   padding: 0.08em 0.3em 0.16em;
   box-shadow: 0 3px 7px rgba(0, 0, 0, 0.45);
