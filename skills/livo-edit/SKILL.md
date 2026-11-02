@@ -30,6 +30,7 @@ description: Conversation-driven video editing for short-form vertical (Reels, T
 11. **PHASE 2 is data-driven.** Scaffold by copying the track template; describe the video in `public/edit-data.json`. **Never read or edit the template TSX** (`src/Main.tsx` etc.) — the only editable code file is `src/CustomGraphics.tsx`, only for bespoke graphics.
 12. **Verify numerically first.** Run `verify_cut.py` on every rendered cut; open images only for flagged junctions. Batch any multi-frame look into one `contact_sheet.py` / `grade.py --candidates` montage.
 13. **Never Read machine data into context**: `transcripts/*.json` (raw), `captions.json`, `track.json`, `segments.json`, matte/track binaries. Read `takes_packed.md` and helper stdout instead.
+14. **Write project JSON with `json.dump`/`json.dumps` and nothing appended by hand**, then re-read it with `json.load` before moving on. On Windows the shell is often PowerShell, where a backslash is NOT an escape: `python -c "...json.dumps(d)+'\\n'"` leaves the two characters `\` `n` after the closing brace, `edit-data.json` stops parsing and the Remotion render (which imports it) breaks. Anything longer than one line goes in a `.py` file under `edit/`, not in `python -c`.
 
 ## Execution medium — ffmpeg pipeline (default) vs Adobe Premiere (MCP)
 
